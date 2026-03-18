@@ -29,17 +29,20 @@ jobs:
         working-directory: ./scraper
         run: uv run playwright install chromium
 
-      # 如果 GitHub Secrets 裡有存 FB_STATE_JSON (包含 Cookies)，就先把它寫入到虛擬機裡
-      - name: Prep Facebook Auth State
+      # 如果 GitHub Secrets 裡有存 FB_STATE_JSON / THREADS_STATE_JSON (包含 Cookies)，就先把它寫入到虛擬機裡
+      - name: Prep Auth States
         working-directory: ./scraper
         env:
           FB_STATE_JSON: ${{ secrets.FB_STATE_JSON }}
+          THREADS_STATE_JSON: ${{ secrets.THREADS_STATE_JSON }}
         run: |
           if [ -n "$FB_STATE_JSON" ]; then
             echo "$FB_STATE_JSON" > state.json
             echo "Successfully loaded FB state.json from secrets."
-          else
-            echo "No FB_STATE_JSON secret found. Scraper will run unauthenticated."
+          fi
+          if [ -n "$THREADS_STATE_JSON" ]; then
+            echo "$THREADS_STATE_JSON" > threads_state.json
+            echo "Successfully loaded Threads state.json from secrets."
           fi
 
       - name: Run Scraper

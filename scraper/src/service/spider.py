@@ -44,7 +44,8 @@ class ScraperService:
         # 擴展至全台灣 FB 相關修繕 / 地方社團清單 (可隨時擴充)
         self.target_urls = [
             "https://m.facebook.com/groups/436329713183204/", # 範例社團 (大里人)
-            # 未來可再加入新竹、台北、高雄等地方社團
+            # 設定 Threads 的搜尋字串清單
+        self.threads_keywords = ["抓漏", "房屋修繕", "壁癌"]
         ]
 
     def _scrape_facebook_groups(self) -> List[dict]:
@@ -87,7 +88,55 @@ class ScraperService:
                                 "url": url 
                             })
                 except Exception as e:
-                    logger.error(f"抓取 {url} 時發生錯誤: {e}")
+                    logger.error(f"抓取 FB {url} 時發生錯誤: {e}")
+            
+            browser.close()
+            
+        return posts_data
+
+    def _scrape_threads(self) -> List[dict]:
+        from playwright.sync_api import sync_playwright
+        import urllib.parse
+        import os
+        logger.info("啟動 Playwright 無頭瀏覽器抓取 Threads...")
+        
+        posts_data = []
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            state_path = "threads_state.json"
+            context_kwargs = {
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "viewport": {'width': 1280, 'height': 800}
+            }
+            if os.path.exists(state_path):
+                logger.info("找到 threads_state.json 登入通行證，套用至 Threads 爬蟲環境...")
+                context_kwargs["storage_state"] = state_path
+            
+            context = browser.new_context(**context_kwargs)
+            page = context.new_page()
+            
+            for keyword in self.threads_keywords:
+                url = f"https://www.threads.net/search?q={urllib.parse.quote(keyword)}"
+                try:
+                    logger.info(f"正在前往 Threads 搜尋: {keyword}")
+                    page.goto(url, wait_until="domcontentloaded", timeout=15000)
+                    page.wait_for_timeout(5000)
+                    
+                    elements = page.locator("div[role='article']").all()
+                    if not elements:
+                        elements = page.locator("div[data-pressable-container='true']").all()
+                        
+                    logger.info(f"在 Threads ({keyword}) 找到 {len(elements)} 篇潛在貼文")
+                    for el in elements[:10]:
+                        text = el.inner_text().strip()
+                        if len(text) > 20: 
+                            posts_data.append({
+                                "platform": "Threads",
+                                "content": text,
+                                "url": url 
+                            })
+                except Exception as e:
+                    logger.error(f"抓取 Threads {keyword} 時發生錯誤: {e}")
             
             browser.close()
             
@@ -100,7 +149,7 @@ class ScraperService:
         logger.info("開始執行真實爬蟲腳本...")
         leads = []
         
-        raw_posts = self._scrape_facebook_groups()
+        raw_posts = self._scrape_facebook_groups() + self._scrape_threads()
 
         for idx, post in enumerate(raw_posts):
             logger.info(f"檢測貼文 {idx+1} [長度 {len(post['content'])}]: {post['content'][:50]}...")
