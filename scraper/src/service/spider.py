@@ -44,9 +44,9 @@ class ScraperService:
         # 擴展至全台灣 FB 相關修繕 / 地方社團清單 (可隨時擴充)
         self.target_urls = [
             "https://m.facebook.com/groups/436329713183204/", # 範例社團 (大里人)
-            # 設定 Threads 的搜尋字串清單
-        self.threads_keywords = ["抓漏", "房屋修繕", "壁癌"]
         ]
+        # 設定 Threads 的搜尋字串清單
+        self.threads_keywords = ["抓漏", "房屋修繕", "壁癌"]
 
     def _scrape_facebook_groups(self) -> List[dict]:
         from playwright.sync_api import sync_playwright
