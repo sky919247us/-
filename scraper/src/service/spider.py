@@ -156,12 +156,15 @@ class ScraperService:
         
         raw_posts = self._scrape_facebook_groups() + self._scrape_threads()
 
+        import hashlib
         for idx, post in enumerate(raw_posts):
             logger.info(f"檢測貼文 {idx+1} [長度 {len(post['content'])}]: {post['content'][:50]}...")
             category = self.engine.analyze_content(post["content"])
             if category:
+                # 使用內容 + 網址的雜湊值作為唯一 ID，避免重複
+                content_hash = hashlib.md5((post["content"] + post["url"]).encode()).hexdigest()[:12]
                 lead = Lead(
-                    id=f"POST-{datetime.now().strftime('%Y%m%d%H%M')}-{idx+1}",
+                    id=f"POST-{content_hash}",
                     platform=post["platform"],
                     post_date=datetime.now(),
                     category=category,
