@@ -11,8 +11,15 @@ class RegexEngine:
     """
     def __init__(self):
         self.triggers = {
-            "結構補強": ["鋼筋外露", "天花板", "水泥剝落", "裂縫", "房屋傾斜", "結構加固"],
-            "防水抓漏": ["漏水", "滲水", "壁癌", "抓漏", "防水", "積水"]
+            "結構補強": [
+                "鋼筋外露", "水泥剝落", "結構植筋", "焊接補強", 
+                "碳纖維貼覆補強", "樓層板破洞", "RC裂縫", "灌注補強", 
+                "EPOXY環氧樹脂砂漿施作", "天花板", "房屋傾斜", "結構加固"
+            ],
+            "防水抓漏": [
+                "漏水", "滲水", "壁癌", "抓漏", "防水", "積水",
+                "室内防水", "防漏", "室外防水", "牆面修補"
+            ]
         }
         # 移除地區限制，改為全台適用。負面詞條維持。
         self.negatives = ["售屋", "仲介", "五金買賣", "誠徵學徒", "缺工", "找人代工"]
@@ -50,8 +57,14 @@ class ScraperService:
             "https://m.facebook.com/groups/337463513076135/", # 台北人
             "https://m.facebook.com/groups/712345678901234/"  # 這裡可繼續手動加入更多的公開社團網址
         ]
-        # 設定 Threads 的搜尋字串清單
-        self.threads_keywords = ["抓漏", "房屋修繕", "壁癌"]
+        # 設定 Threads 的搜尋字串清單 (包含使用者指定的所有專業關鍵字)
+        self.threads_keywords = [
+            "抓漏", "房屋修繕", "壁癌", "防水工程",
+            "鋼筋外露", "水泥剝落", "結構植筋", "焊接補強", 
+            "碳纖維貼覆補強", "樓層板破洞", "牆面修補", 
+            "室内防水", "防漏", "室外防水", "RC裂縫", 
+            "灌注補強", "EPOXY環氧樹脂砂漿施作"
+        ]
 
     def _scrape_facebook_groups(self) -> List[dict]:
         from playwright.sync_api import sync_playwright
@@ -156,13 +169,25 @@ class ScraperService:
         
         raw_posts = self._scrape_facebook_groups() + self._scrape_threads()
 
+        # 內容去重：避免同一貼文因為不同搜尋詞或平台設定而重複
+        seen_content = set()
+        unique_posts = []
+        for post in raw_posts:
+            # 移除空白與特殊字元後進行比較，增加去重準確度
+            clean_text = "".join(post["content"].split())
+            if clean_text not in seen_content:
+                seen_content.add(clean_text)
+                unique_posts.append(post)
+
         import hashlib
-        for idx, post in enumerate(raw_posts):
+        for idx, post in enumerate(unique_posts):
             logger.info(f"檢測貼文 {idx+1} [長度 {len(post['content'])}]: {post['content'][:50]}...")
             category = self.engine.analyze_content(post["content"])
             if category:
-                # 使用內容 + 網址的雜湊值作為唯一 ID，避免重複
-                content_hash = hashlib.md5((post["content"] + post["url"]).encode()).hexdigest()[:12]
+                # 使用「平台 + 內容」的雜湊值作為唯一 ID，避免重複
+                # 不再包含搜尋 URL，因為不同關鍵字會導致網址不同
+                content_id_base = post["platform"] + post["content"].strip()
+                content_hash = hashlib.md5(content_id_base.encode()).hexdigest()[:12]
                 lead = Lead(
                     id=f"POST-{content_hash}",
                     platform=post["platform"],
