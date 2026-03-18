@@ -1,18 +1,27 @@
-# 存放機敏金鑰的環境變數檔
+# environments
 .env
+.venv/
+env/
+venv/
+ENV/
 
 # Python 快取與環境
 __pycache__/
 *.pyc
-.venv/
-venv/
-env/
+
+# PWA artifacts
+pwa-app/dist/
+pwa-app/.vite/
+
+# Scraper State
+state.json
+*_result.txt
+*.png
 
 # 前端套件
 node_modules/
 pwa-app/node_modules/
 dist/
-pwa-app/dist/
 
 # OS 產生檔案
 .DS_Store
