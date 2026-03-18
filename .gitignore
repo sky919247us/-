@@ -1,0 +1,19 @@
+# 存放機敏金鑰的環境變數檔
+.env
+
+# Python 快取與環境
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# 前端套件
+node_modules/
+pwa-app/node_modules/
+dist/
+pwa-app/dist/
+
+# OS 產生檔案
+.DS_Store
+Thumbs.db
