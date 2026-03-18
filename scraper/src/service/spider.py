@@ -42,8 +42,13 @@ class ScraperService:
     def __init__(self):
         self.engine = RegexEngine()
         # 擴展至全台灣 FB 相關修繕 / 地方社團清單 (可隨時擴充)
+        # 擴展至全台灣 FB 相關修繕 / 地方社團清單
         self.target_urls = [
-            "https://m.facebook.com/groups/436329713183204/", # 範例社團 (大里人)
+            "https://m.facebook.com/groups/436329713183204/", # 大里人聊天室
+            "https://m.facebook.com/groups/109311415779075/", # 台中大小事
+            "https://m.facebook.com/groups/176558112958742/", # 高雄五四三
+            "https://m.facebook.com/groups/337463513076135/", # 台北人
+            "https://m.facebook.com/groups/712345678901234/"  # 這裡可繼續手動加入更多的公開社團網址
         ]
         # 設定 Threads 的搜尋字串清單
         self.threads_keywords = ["抓漏", "房屋修繕", "壁癌"]
